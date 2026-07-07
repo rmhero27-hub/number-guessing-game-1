@@ -36,12 +36,12 @@ do
 
   ((NUMBER_OF_GUESSES++))
 
-  if [[ $GUESS -lt $SECRET_NUMBER ]]
-  then
-    echo "It's higher than that, guess again:"
-  elif [[ $GUESS -gt $SECRET_NUMBER ]]
+  if [[ $GUESS -gt $SECRET_NUMBER ]]
   then
     echo "It's lower than that, guess again:"
+  elif [[ $GUESS -lt $SECRET_NUMBER ]]
+  then
+    echo "It's higher than that, guess again:"
   else
     break
   fi
