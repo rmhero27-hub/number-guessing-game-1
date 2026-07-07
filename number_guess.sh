@@ -12,7 +12,9 @@ USER_INFO=$($PSQL "SELECT user_id, games_played, best_game FROM users WHERE user
 if [[ -z $USER_INFO ]]
 then
   echo "Welcome, $USERNAME! It looks like this is your first time here."
-  USER_ID=$($PSQL "INSERT INTO users(username) VALUES('$USERNAME') RETURNING user_id")
+
+  USER_ID=$($PSQL "INSERT INTO users(username) VALUES('$USERNAME') RETURNING user_id;" | xargs)
+
 else
   USER_ID=$(echo $USER_INFO | cut -d "|" -f1)
   GAMES_PLAYED=$(echo $USER_INFO | cut -d "|" -f2)
@@ -22,6 +24,7 @@ else
 fi
 
 echo "Guess the secret number between 1 and 1000:"
+
 NUMBER_OF_GUESSES=0
 
 while true
@@ -36,15 +39,16 @@ do
 
   ((NUMBER_OF_GUESSES++))
 
-  if [[ $GUESS -gt $SECRET_NUMBER ]]
-  then
-    echo "It's lower than that, guess again:"
-  elif [[ $GUESS -lt $SECRET_NUMBER ]]
+  if [[ $GUESS -lt $SECRET_NUMBER ]]
   then
     echo "It's higher than that, guess again:"
+  elif [[ $GUESS -gt $SECRET_NUMBER ]]
+  then
+    echo "It's lower than that, guess again:"
   else
     break
   fi
+
 done
 
 echo "You guessed it in $NUMBER_OF_GUESSES tries. The secret number was $SECRET_NUMBER. Nice job!"
