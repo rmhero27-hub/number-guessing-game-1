@@ -8,47 +8,50 @@ NUMBER_OF_GUESSES=0
 echo "Enter your username:"
 read USERNAME
 
-USER_INFO=$($PSQL "SELECT user_id FROM users WHERE username='$USERNAME';")
+USER_INFO=$($PSQL "SELECT user_id, games_played, best_game FROM users WHERE username='$USERNAME'")
 
 if [[ -z $USER_INFO ]]
 then
-  INSERT_USER=$($PSQL "INSERT INTO users(username) VALUES('$USERNAME')")
-  USER_ID=$($PSQL "SELECT user_id FROM users WHERE username='$USERNAME';")
   echo "Welcome, $USERNAME! It looks like this is your first time here."
+  USER_ID=$($PSQL "INSERT INTO users(username) VALUES('$USERNAME') RETURNING user_id")
 else
-  USER_ID=$USER_INFO
-
-  GAMES_PLAYED=$($PSQL "SELECT COUNT(*) FROM games WHERE user_id=$USER_ID;")
-  BEST_GAME=$($PSQL "SELECT MIN(guesses) FROM games WHERE user_id=$USER_ID;")
+  USER_ID=$(echo $USER_INFO | cut -d "|" -f1)
+  GAMES_PLAYED=$(echo $USER_INFO | cut -d "|" -f2)
+  BEST_GAME=$(echo $USER_INFO | cut -d "|" -f3)
 
   echo "Welcome back, $USERNAME! You have played $GAMES_PLAYED games, and your best game took $BEST_GAME guesses."
 fi
 
 echo "Guess the secret number between 1 and 1000:"
 
-read GUESS
-
-while [[ $GUESS != $SECRET_NUMBER ]]
+while true
 do
+  read GUESS
+
   if ! [[ $GUESS =~ ^[0-9]+$ ]]
   then
     echo "That is not an integer, guess again:"
-  else
-    NUMBER_OF_GUESSES=$((NUMBER_OF_GUESSES + 1))
-
-    if [[ $GUESS -gt $SECRET_NUMBER ]]
-    then
-      echo "It's lower than that, guess again:"
-    else
-      echo "It's higher than that, guess again:"
-    fi
+    continue
   fi
 
-  read GUESS
+  NUMBER_OF_GUESSES=$((NUMBER_OF_GUESSES + 1))
+
+  if [[ $GUESS -lt $SECRET_NUMBER ]]
+  then
+    echo "It's higher than that, guess again:"
+  elif [[ $GUESS -gt $SECRET_NUMBER ]]
+  then
+    echo "It's lower than that, guess again:"
+  else
+    break
+  fi
 done
 
-NUMBER_OF_GUESSES=$((NUMBER_OF_GUESSES + 1))
-
-INSERT_GAME=$($PSQL "INSERT INTO games(user_id,guesses) VALUES($USER_ID,$NUMBER_OF_GUESSES)")
-
 echo "You guessed it in $NUMBER_OF_GUESSES tries. The secret number was $SECRET_NUMBER. Nice job!"
+
+$PSQL "UPDATE users SET games_played = games_played + 1 WHERE user_id=$USER_ID" > /dev/null
+
+if [[ -z $BEST_GAME ]] || [[ $NUMBER_OF_GUESSES -lt $BEST_GAME ]]
+then
+  $PSQL "UPDATE users SET best_game=$NUMBER_OF_GUESSES WHERE user_id=$USER_ID" > /dev/null
+fi
