@@ -36,16 +36,18 @@ do
   if ! [[ $GUESS =~ ^[0-9]+$ ]]
   then
     echo "That is not an integer, guess again:"
-  elif (( GUESS > SECRET_NUMBER ))
+    continue
+  fi
+
+  NUMBER_OF_GUESSES=$((NUMBER_OF_GUESSES + 1))
+
+  if (( GUESS > SECRET_NUMBER ))
   then
-    NUMBER_OF_GUESSES=$((NUMBER_OF_GUESSES + 1))
     echo "It's lower than that, guess again:"
   elif (( GUESS < SECRET_NUMBER ))
   then
-    NUMBER_OF_GUESSES=$((NUMBER_OF_GUESSES + 1))
     echo "It's higher than that, guess again:"
   else
-    NUMBER_OF_GUESSES=$((NUMBER_OF_GUESSES + 1))
     break
   fi
 done
